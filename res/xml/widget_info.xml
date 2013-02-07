@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android" 
+    android:initialLayout="@layout/widget"
+    android:minWidth="180dp"
+    android:minHeight="300dp"
+    android:label="@string/unread"
+    android:updatePeriodMillis="1800000" />  <!-- 1,800,000 millis = 30 mins -->
