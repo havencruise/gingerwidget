@@ -52,8 +52,11 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 		Log.d(TAG, "getViewAt: "+ position);
 		
+		Unread unread = this.data.get(position);
+		
 		RemoteViews rv = new RemoteViews(this.context.getPackageName(), R.layout.row);
-		rv.setTextViewText(R.id.rowContent, this.data.get(position).toString());
+		rv.setTextViewText(R.id.rowTitle, unread.title);
+		rv.setTextViewText(R.id.rowUnreadCount, String.valueOf(unread.unread_count));
 		
 		return rv;
 	}
