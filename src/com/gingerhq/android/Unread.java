@@ -16,8 +16,8 @@ public class Unread {
 	public int unread_count; 
 	public String intro;
 	
-	public JSONObject message;
-	public JSONObject latest_message;
+	public Message message;
+	public Message latest_message;
 	
 	public Unread(JSONObject obj) throws JSONException {
 		
@@ -38,8 +38,8 @@ public class Unread {
 			this.unread_count = Integer.parseInt(unread_count_str);
 		}
 		
-		this.message = obj.getJSONObject("message");
-		this.latest_message = obj.getJSONObject("latest_message");
+		//this.message = new Message(obj.getJSONObject("message"));
+		this.latest_message = new Message(obj.getJSONObject("latest_message"));
 	}
 	
 	public Unread(Cursor cursor) {
@@ -52,6 +52,9 @@ public class Unread {
 		this.intro = cursor.getString(cursor.getColumnIndex("intro"));
 		this.unread_count = cursor.getInt(cursor.getColumnIndex("unread_count"));
 		this.reply_count = cursor.getInt(cursor.getColumnIndex("reply_count"));
+		
+		int latest_id = cursor.getInt(cursor.getColumnIndex("latest_message"));
+		this.latest_message = DBManager.getMessage(latest_id);
 	}
 	
 	public String toString() {

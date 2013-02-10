@@ -4,6 +4,7 @@ import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
@@ -57,7 +58,14 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 		RemoteViews rv = new RemoteViews(this.context.getPackageName(), R.layout.row);
 		rv.setTextViewText(R.id.rowTitle, unread.title);
 		rv.setTextViewText(R.id.rowUnreadCount, String.valueOf(unread.unread_count));
-		
+		rv.setTextViewText(R.id.rowUser, "Updated by " + unread.latest_message.user);
+		rv.setTextViewText(R.id.rowWhen, 
+				DateUtils.getRelativeDateTimeString(
+						this.context, 
+						unread.latest_message.date_latest_activity.getTime(), 
+						DateUtils.MINUTE_IN_MILLIS, 
+						DateUtils.WEEK_IN_MILLIS, 
+						0) );
 		return rv;
 	}
 
