@@ -7,7 +7,7 @@ import org.json.JSONObject;
 
 public class Message {
 
-	private static final String TAG = Message.class.getSimpleName();
+	//private static final String TAG = Message.class.getSimpleName();
 	
 	int id;
 	String uuid;

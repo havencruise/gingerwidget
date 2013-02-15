@@ -1,6 +1,6 @@
 package com.gingerhq.android;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,13 +22,18 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 	private static final String TAG = WidgetRemoteFactory.class.getSimpleName();
 	
-	List<Unread> data;
+	ArrayList<Unread> data;
 	Context context;
 	
 	public WidgetRemoteFactory(Context applicationContext, Intent intent) {
 		Log.d(TAG, "WidgetRemoteFactory constructor");
 		this.context = applicationContext;
-		this.data = new DBManager(applicationContext).load();
+		
+		Log.d(TAG, "calling getParcelableArrayListExtra");
+		this.data = intent.getParcelableArrayListExtra("com.gingerhq.android.Unread");
+		Log.d(TAG, "done getParcelableArrayListExtra");
+		
+		//new DBManager(applicationContext).load();
 	}
 
 	@Override

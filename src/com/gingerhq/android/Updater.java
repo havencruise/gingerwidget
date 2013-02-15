@@ -23,7 +23,6 @@ public class Updater extends IntentService {
 
 	private static final String TAG = Updater.class.getSimpleName();
     private static final String DISCS = "https://gingerhq.com/api/v1/discussion/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&format=json&limit=10&offset=0&unread=1";
-    private static final String TEAMS = "https://gingerhq.com/api/v1/team/?username=%@&api_key=%@&limit=1000&offset=0&format=json";
     
     private DBManager dbManager;
     

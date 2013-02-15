@@ -4,9 +4,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.database.Cursor;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.Log;
 
-public class Unread {
+public class Unread implements Parcelable {
 
+	private static final String TAG = Unread.class.getSimpleName();
+	
+	static final Parcelable.Creator<Unread> CREATOR = new UnreadCreator();
+	
 	public int id;
 	public String title;
 	public int reply_count;
@@ -18,6 +25,23 @@ public class Unread {
 	
 	public Message message;
 	public Message latest_message;
+	
+	public Unread() {
+	}
+	
+	private Unread(Parcel source) {
+		Log.d(TAG, "Unread<constructor> with Parcel");
+		this.id = source.readInt();
+		/*
+		this.title = source.readString();
+		this.reply_count = source.readInt();
+		this.resource_uri = source.readString();
+		this.slug = source.readString();
+		this.team = source.readString();
+		this.unread_count = source.readInt();
+		this.intro = source.readString();
+		*/
+	}
 	
 	public Unread(JSONObject obj) throws JSONException {
 		
@@ -39,7 +63,7 @@ public class Unread {
 		}
 		
 		//this.message = new Message(obj.getJSONObject("message"));
-		this.latest_message = new Message(obj.getJSONObject("latest_message"));
+		//this.latest_message = new Message(obj.getJSONObject("latest_message"));
 	}
 	
 	public Unread(Cursor cursor) {
@@ -59,5 +83,43 @@ public class Unread {
 	
 	public String toString() {
 		return this.title;
+	}
+
+	@Override
+	public int describeContents() {
+		return 0;
+	}
+
+	@Override
+	public void writeToParcel(Parcel dest, int flags) {
+		Log.d(TAG, "Unread.writeToParcel: "+ this.id);
+		dest.writeInt(this.id);
+		/*
+		dest.writeString(this.title);
+		dest.writeInt(this.reply_count);
+		dest.writeString(this.resource_uri);
+		dest.writeString(this.slug);
+		dest.writeString(this.team);
+		dest.writeInt(this.unread_count);
+		dest.writeString(this.intro);
+		*/
+	}
+	
+	/* Inner classes */
+	
+	static class UnreadCreator implements Parcelable.Creator<Unread> {
+
+		@Override
+		public Unread createFromParcel(Parcel source) {
+			Log.d(TAG, "UnreadCreator.createFromParcel");
+			return new Unread(source);
+		}
+
+		@Override
+		public Unread[] newArray(int size) {
+			Log.d(TAG, "UnreadCreator.newArray");
+			return new Unread[size];
+		}
+		
 	}
 }
