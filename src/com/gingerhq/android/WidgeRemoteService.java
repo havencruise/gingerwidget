@@ -60,7 +60,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 		RemoteViews rv = new RemoteViews(this.context.getPackageName(), R.layout.row);
 		rv.setTextViewText(R.id.rowTitle, unread.title);
 		rv.setTextViewText(R.id.rowUnreadCount, String.valueOf(unread.unread_count));
-		rv.setTextViewText(R.id.rowUser, "Updated by " + unread.latest_message.user);
+		rv.setTextViewText(R.id.rowUser, "In " + unread.team);
 		
 		rv.setTextViewText(R.id.rowWhen, 
 				DateUtils.getRelativeDateTimeString(

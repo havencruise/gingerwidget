@@ -74,11 +74,13 @@ public class Widget extends AppWidgetProvider {
 			String jsonTeams = this.fetchURL(TEAMS);
 			
 			publishProgress("Parsing teams...");
+			Map<String, String> teamNames = null;
 			try {
-				Map<String, String> teamNames = this.extractTeamNames(jsonTeams);
+				teamNames = this.extractTeamNames(jsonTeams);
 				Log.d(TAG, teamNames.toString());
 			} catch (JSONException exc) {
 				Log.e(TAG, "JSONException parsing team names: ", exc);
+				return null;
 			}
 			
 			publishProgress("Fetching unread messages...");
@@ -87,11 +89,32 @@ public class Widget extends AppWidgetProvider {
 			publishProgress("Parsing messages...");
 			String jsonUnread = this.extractObjs(jsonMsgs);
 			
-			publishProgress("Displaying...");
+			publishProgress("Tweaking teams...");
+			try {
+				jsonUnread = this.setTeamNames(jsonUnread, teamNames);
+			} catch (JSONException exc) {
+				Log.e(TAG, "JSONException setting team names: ", exc);
+			}
 			
+			publishProgress("Displaying...");
 			return jsonUnread;
 		}
-				
+
+		private String setTeamNames(String jsonUnread, Map<String, String> teamNames) throws JSONException {
+			
+			JSONArray array = new JSONArray(jsonUnread);
+			JSONArray output = new JSONArray();
+			
+			for (int i = 0; i < array.length(); i++) {
+				JSONObject unreadJsonObj = (JSONObject) array.get(i);
+				String teamURI = unreadJsonObj.getString("team");
+				unreadJsonObj.put("team", teamNames.get(teamURI));
+				output.put(unreadJsonObj);
+			}
+			
+			return output.toString();
+		}
+
 		private Map<String, String> extractTeamNames(String jsonTeams) throws JSONException {
 
 			Map<String, String> result = new HashMap<String, String>();
