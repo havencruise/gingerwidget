@@ -1,13 +1,19 @@
 package com.gingerhq.android;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 public class Message {
 
-	//private static final String TAG = Message.class.getSimpleName();
+	private static final String TAG = Message.class.getSimpleName();
 	
 	int id;
 	String uuid;
@@ -34,20 +40,20 @@ public class Message {
 	String attachments;
 	
 	public Message(JSONObject jsonObj) throws JSONException {
-		/*
-		Log.d(TAG, "----");
-		Iterator<String> iter = (Iterator<String>) jsonObj.keys();
-		while (iter.hasNext()) {
-			String key = iter.next();
-			Log.d(TAG, key + " = " + jsonObj.get(key));
-		}
-		*/
+
 		this.id = jsonObj.getInt("id");
 		
 		this.user = jsonObj.getString("user");
 		
 		this.permalink = jsonObj.getString("permalink");
-		this.date_latest_activity = new Date( jsonObj.getLong("date_latest_activity") );
+		
+		String latest_dt = jsonObj.getString("date_latest_activity");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.US);
+		try {
+			this.date_latest_activity = df.parse(latest_dt);
+		} catch (ParseException exc) {
+			Log.e(TAG, "ParseException: " + exc);
+		}
 
 		/*
 		this.uuid = jsonObj.getString("uuid");

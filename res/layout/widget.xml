@@ -16,12 +16,12 @@
        		android:layout_width="wrap_content"
        		android:layout_height="wrap_content"
        	    android:src="@drawable/ic_launcher"
-       	    android:contentDescription="Ginger logo" />
+       	    android:contentDescription="@string/logo" />
 
        	<TextView
        	    android:layout_width="wrap_content"
        	    android:layout_height="match_parent"
-       	    android:text="Unread messages"
+       	    android:text="@string/unread"
        	    android:textColor="#000"
        	    android:textSize="16sp"
        	    android:paddingLeft="10dp"
@@ -38,7 +38,7 @@
         android:padding="5dip" />
     
     <TextView android:id="@+id/widgetEmpty" 
-        android:text="Ginger: You've read everything" 
+        android:text="@string/all_read" 
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
     

@@ -1,6 +1,6 @@
 package com.gingerhq.android;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
@@ -22,18 +22,15 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 	private static final String TAG = WidgetRemoteFactory.class.getSimpleName();
 	
-	ArrayList<Unread> data;
+	List<Unread> data;
 	Context context;
 	
 	public WidgetRemoteFactory(Context applicationContext, Intent intent) {
 		Log.d(TAG, "WidgetRemoteFactory constructor");
 		this.context = applicationContext;
-		
-		Log.d(TAG, "calling getParcelableArrayListExtra");
-		this.data = intent.getParcelableArrayListExtra("com.gingerhq.android.Unread");
-		Log.d(TAG, "done getParcelableArrayListExtra");
-		
-		//new DBManager(applicationContext).load();
+				
+		String jsonData = intent.getStringExtra("com.gingerhq.android.Unread");
+		this.data = Unread.fromJSON(jsonData);
 	}
 
 	@Override
@@ -64,6 +61,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 		rv.setTextViewText(R.id.rowTitle, unread.title);
 		rv.setTextViewText(R.id.rowUnreadCount, String.valueOf(unread.unread_count));
 		rv.setTextViewText(R.id.rowUser, "Updated by " + unread.latest_message.user);
+		
 		rv.setTextViewText(R.id.rowWhen, 
 				DateUtils.getRelativeDateTimeString(
 						this.context, 
@@ -71,6 +69,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 						DateUtils.MINUTE_IN_MILLIS, 
 						DateUtils.WEEK_IN_MILLIS, 
 						0) );
+
 		return rv;
 	}
 

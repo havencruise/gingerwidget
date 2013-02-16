@@ -1,19 +1,19 @@
 package com.gingerhq.android;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
-import android.database.Cursor;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.util.Log;
 
-public class Unread implements Parcelable {
+public class Unread {
 
 	private static final String TAG = Unread.class.getSimpleName();
-	
-	static final Parcelable.Creator<Unread> CREATOR = new UnreadCreator();
-	
+		
 	public int id;
 	public String title;
 	public int reply_count;
@@ -23,30 +23,47 @@ public class Unread implements Parcelable {
 	public int unread_count; 
 	public String intro;
 	
-	public Message message;
 	public Message latest_message;
 	
-	public Unread() {
+	/*
+	public static String toJSON(List<Unread> dataL) {
+		
+		JSONArray result = new JSONArray();
+		
+		for (Unread unread : dataL) {
+			result.put(new JSONObject(unread.asMap()));
+		}
+
+		return result.toString();
 	}
+	*/
 	
-	private Unread(Parcel source) {
-		Log.d(TAG, "Unread<constructor> with Parcel");
-		this.id = source.readInt();
-		/*
-		this.title = source.readString();
-		this.reply_count = source.readInt();
-		this.resource_uri = source.readString();
-		this.slug = source.readString();
-		this.team = source.readString();
-		this.unread_count = source.readInt();
-		this.intro = source.readString();
-		*/
+	public static List<Unread> fromJSON(String dataS) {
+
+		List<Unread> result = new ArrayList<Unread>();
+		
+		try {
+			JSONTokener tok = new JSONTokener(dataS);
+			JSONArray arr = (JSONArray) tok.nextValue();
+			
+			for (int i = 0; i < arr.length(); i++) {
+			
+				JSONObject jobj = arr.getJSONObject(i);
+				result.add(new Unread(jobj));
+			}
+			
+		} catch (JSONException exc) {
+			Log.e(TAG, "JSONException:", exc);
+		}
+		
+		return result;
 	}
 	
 	public Unread(JSONObject obj) throws JSONException {
 		
 		this.id = obj.getInt("id");
 		this.title = obj.getString("title");
+
 		this.resource_uri = obj.getString("resource_uri");
 		this.slug = obj.getString("slug");
 		this.team = obj.getString("team");
@@ -63,63 +80,27 @@ public class Unread implements Parcelable {
 		}
 		
 		//this.message = new Message(obj.getJSONObject("message"));
-		//this.latest_message = new Message(obj.getJSONObject("latest_message"));
-	}
-	
-	public Unread(Cursor cursor) {
-
-		this.id = cursor.getInt(cursor.getColumnIndex("id"));
-		this.title = cursor.getString(cursor.getColumnIndex("title"));
-		this.resource_uri = cursor.getString(cursor.getColumnIndex("resource_uri"));
-		this.slug = cursor.getString(cursor.getColumnIndex("slug"));
-		this.team = cursor.getString(cursor.getColumnIndex("team"));
-		this.intro = cursor.getString(cursor.getColumnIndex("intro"));
-		this.unread_count = cursor.getInt(cursor.getColumnIndex("unread_count"));
-		this.reply_count = cursor.getInt(cursor.getColumnIndex("reply_count"));
-		
-		int latest_id = cursor.getInt(cursor.getColumnIndex("latest_message"));
-		this.latest_message = DBManager.getMessage(latest_id);
+		this.latest_message = new Message(obj.getJSONObject("latest_message"));
 	}
 	
 	public String toString() {
 		return this.title;
 	}
-
-	@Override
-	public int describeContents() {
-		return 0;
-	}
-
-	@Override
-	public void writeToParcel(Parcel dest, int flags) {
-		Log.d(TAG, "Unread.writeToParcel: "+ this.id);
-		dest.writeInt(this.id);
-		/*
-		dest.writeString(this.title);
-		dest.writeInt(this.reply_count);
-		dest.writeString(this.resource_uri);
-		dest.writeString(this.slug);
-		dest.writeString(this.team);
-		dest.writeInt(this.unread_count);
-		dest.writeString(this.intro);
-		*/
-	}
 	
-	/* Inner classes */
-	
-	static class UnreadCreator implements Parcelable.Creator<Unread> {
-
-		@Override
-		public Unread createFromParcel(Parcel source) {
-			Log.d(TAG, "UnreadCreator.createFromParcel");
-			return new Unread(source);
-		}
-
-		@Override
-		public Unread[] newArray(int size) {
-			Log.d(TAG, "UnreadCreator.newArray");
-			return new Unread[size];
-		}
+	/*
+	public Map<String, Object> asMap() {
 		
+		Map<String, Object> result = new HashMap<String, Object>();
+		result.put("id", Integer.valueOf(this.id));
+		result.put("title", this.title);
+		result.put("reply_count", Integer.valueOf(this.reply_count));
+		result.put("resource_uri", this.resource_uri);
+		result.put("slug", this.slug);
+		result.put("team", this.team);
+		result.put("unread_count", Integer.valueOf(this.unread_count));
+		result.put("intro", this.intro);
+
+		return result;
 	}
+	*/
 }

@@ -6,10 +6,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -50,12 +47,11 @@ public class Widget extends AppWidgetProvider {
 
 	@Override
 	public void onDeleted(Context context, int[] appWidgetIds) {
-		// TODO Auto-generated method stub
 		super.onDeleted(context, appWidgetIds);
 		Log.d(TAG, "Widget.onDeleted");
 	}
 
-	class Fetch extends AsyncTask<String, String, List<Unread>> {
+	class Fetch extends AsyncTask<String, String, String> {
 
 		Context context;
 		AppWidgetManager appWidgetManager;
@@ -69,18 +65,18 @@ public class Widget extends AppWidgetProvider {
 		}
 		
 		@Override
-		protected List<Unread> doInBackground(String... params) {
+		protected String doInBackground(String... params) {
 			Log.d(TAG, "Fetch.doInBackground");
 			
 			publishProgress("Fetching unread messages...");
 			String jsonMsgs = this.fetch();
 			
 			publishProgress("Parsing messages...");
-			List<Unread> newUnread = this.parse(jsonMsgs);
+			String jsonUnread = this.extractObjs(jsonMsgs);
 			
 			publishProgress("Displaying...");
 			
-			return newUnread;
+			return jsonUnread;
 		}
 		
 		/**
@@ -111,23 +107,24 @@ public class Widget extends AppWidgetProvider {
 		}
 		
 		/**
-		 * Parse JSON of incoming messages.
+		 * Extract unread messages JSON from incoming JSON.
 		 */
-		private List<Unread> parse(String jsonMsgs) {
+		private String extractObjs(String jsonMsgs) {
 			if (jsonMsgs == null || jsonMsgs.length() == 0) {
 				return null;
 			}
 			
-			List<Unread> result = new ArrayList<Unread>();
+			//List<Unread> result = new ArrayList<Unread>();
 			
 			try {
 				JSONObject obj = (JSONObject) new JSONTokener(jsonMsgs).nextValue();
 				
-				JSONObject meta = obj.getJSONObject("meta");
-				//Log.d(TAG, "New messages: " + meta.get("total_count"));
+				//JSONObject meta = obj.getJSONObject("meta");
 				
 				JSONArray array = obj.getJSONArray("objects");
+				return array.toString();
 				
+				/*
 				for (int i = 0; i < array.length(); i++) {
 					JSONObject unreadJsonObj = (JSONObject) array.get(i);
 				
@@ -141,19 +138,18 @@ public class Widget extends AppWidgetProvider {
 					Unread unread = new Unread(unreadJsonObj);			
 					result.add(unread);
 				}
-				
+				*/
 			} catch (JSONException exc) {
 				Log.e(TAG, "JSONException parsing unread msgs from Ginger.", exc);
 			}
 			
-			Log.d(TAG, "result: " + result);
-			return result;
+			return "";
 		}
 		
 		@Override
-		protected void onPostExecute(List<Unread> result) {
+		protected void onPostExecute(String result) {
 			super.onPostExecute(result);
-			Log.d(TAG, "Fetch.onPostExecute");
+			Log.d(TAG, "Fetch.onPostExecute: " + result);
 			
 			for (int i = 0; i < appWidgetIds.length; ++i) {		// In case we have multiple widgets
 				
@@ -161,10 +157,8 @@ public class Widget extends AppWidgetProvider {
 				intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[i]);
 				intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
 				
-				Log.d(TAG, "Putting unread array on intent with putExtra");
-				intent.putExtra("com.gingerhq.android.Unread", result.toArray());
-				Log.d(TAG, "Done putting unread on intent");
-				
+				intent.putExtra("com.gingerhq.android.Unread", result);
+
 				RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget);
 				rv.setRemoteAdapter(R.id.widgetList, intent);
 				rv.setEmptyView(R.id.widgetList, R.id.widgetEmpty);

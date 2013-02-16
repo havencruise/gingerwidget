@@ -1,6 +1,8 @@
 <resources>
 
     <string name="app_name">Ginger Widget</string>
-    <string name="unread">Ginger Unread</string>
-
+    <string name="unread">Unread messages</string>
+	<string name="logo">Ginger logo</string>
+	<string name="all_read">You\'ve read everything</string>
+		
 </resources>
