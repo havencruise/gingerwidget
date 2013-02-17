@@ -2,7 +2,7 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android" 
     android:initialLayout="@layout/widget"
     android:minWidth="180dp"
-    android:minHeight="300dp"
+    android:minHeight="200dp"
     android:label="@string/unread"
     android:resizeMode="vertical"
     android:updatePeriodMillis="1800000" />  <!-- 1,800,000 millis = 30 mins -->

@@ -1,8 +1,7 @@
 package com.gingerhq.android;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -30,7 +29,7 @@ public class Widget extends AppWidgetProvider {
 	
 	private static final String DISCS = "https://gingerhq.com/api/v1/discussion/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&format=json&limit=10&offset=0&unread=1";
     private static final String TEAMS = "https://gingerhq.com/api/v1/team/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&limit=100&offset=0&format=json";
-	
+	    
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		super.onReceive(context, intent);
@@ -70,6 +69,12 @@ public class Widget extends AppWidgetProvider {
 		protected String doInBackground(String... params) {
 			Log.d(TAG, "Fetch.doInBackground");
 			
+			publishProgress("Fetching unread messages...");
+			String jsonMsgs = this.fetchURL(DISCS);
+			
+			publishProgress("Parsing messages...");
+			String jsonUnread = this.extractObjs(jsonMsgs);
+			
 			publishProgress("Fetching teams...");
 			String jsonTeams = this.fetchURL(TEAMS);
 			
@@ -77,17 +82,10 @@ public class Widget extends AppWidgetProvider {
 			Map<String, String> teamNames = null;
 			try {
 				teamNames = this.extractTeamNames(jsonTeams);
-				Log.d(TAG, teamNames.toString());
 			} catch (JSONException exc) {
 				Log.e(TAG, "JSONException parsing team names: ", exc);
 				return null;
 			}
-			
-			publishProgress("Fetching unread messages...");
-			String jsonMsgs = this.fetchURL(DISCS);
-			
-			publishProgress("Parsing messages...");
-			String jsonUnread = this.extractObjs(jsonMsgs);
 			
 			publishProgress("Tweaking teams...");
 			try {
@@ -132,34 +130,6 @@ public class Widget extends AppWidgetProvider {
 		}
 
 		/**
-		 * Fetch unread messages as JSON.
-		 * @return JSON string
-		 *
-		private String fetchUnread() {
-			
-			URL url = null;
-	        try {
-	            url = new URL(DISCS);
-	        } catch (MalformedURLException exc) {
-	            Log.e(TAG, "MalformedURLException on: "+ DISCS, exc);
-	            return "";
-	        }
-
-	        String line = "";
-	        try {
-	            URLConnection conn = url.openConnection();
-	            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-	            line = reader.readLine();
-	            reader.close();
-	        } catch (IOException exc) {
-	            Log.e(TAG, "IOException fetch unread discussions. ", exc);
-	        }
-	        
-	        return line;
-		}
-		*/
-
-		/**
 		 * Fetch contents of a url
 		 * @param urlStr Like, a URL, duh.
 		 */
@@ -173,17 +143,27 @@ public class Widget extends AppWidgetProvider {
 	            return "";
 	        }
 
-	        String line = "";
+	        StringBuffer dataRead = new StringBuffer();
+	        byte[] buf = new byte[2048];
+	        int num_read = 0;
+	        
 	        try {
 	            URLConnection conn = url.openConnection();
-	            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-	            line = reader.readLine();
-	            reader.close();
+	            InputStream stream = conn.getInputStream();
+
+	            num_read = stream.read(buf);
+	            while (num_read != -1) {	            	
+	            	Log.d(TAG, "Read: "+ num_read);
+	            	dataRead.append(new String(buf, 0, num_read, "UTF-8"));
+	            	num_read = stream.read(buf);
+	            }
+	            
+	            stream.close();
 	        } catch (IOException exc) {
 	            Log.e(TAG, "IOException fetching remote data. ", exc);
 	        }
 	        
-	        return line;
+	        return dataRead.toString();
 		}
 		
 		/**
@@ -194,31 +174,11 @@ public class Widget extends AppWidgetProvider {
 				return null;
 			}
 			
-			//List<Unread> result = new ArrayList<Unread>();
-			
 			try {
 				JSONObject obj = (JSONObject) new JSONTokener(jsonMsgs).nextValue();
-				
-				//JSONObject meta = obj.getJSONObject("meta");
-				
 				JSONArray array = obj.getJSONArray("objects");
 				return array.toString();
 				
-				/*
-				for (int i = 0; i < array.length(); i++) {
-					JSONObject unreadJsonObj = (JSONObject) array.get(i);
-				
-					//Log.d(TAG, "----");
-					Iterator<String> iter = (Iterator<String>) unreadJsonObj.keys();
-					while (iter.hasNext()) {
-						String key = iter.next();
-						//Log.d(TAG, key + " = " + unreadJsonObj.get(key));
-					}
-					
-					Unread unread = new Unread(unreadJsonObj);			
-					result.add(unread);
-				}
-				*/
 			} catch (JSONException exc) {
 				Log.e(TAG, "JSONException parsing unread msgs from Ginger.", exc);
 			}
@@ -229,7 +189,6 @@ public class Widget extends AppWidgetProvider {
 		@Override
 		protected void onPostExecute(String result) {
 			super.onPostExecute(result);
-			//Log.d(TAG, "Fetch.onPostExecute: " + result);
 			
 			for (int i = 0; i < appWidgetIds.length; ++i) {		// In case we have multiple widgets
 				
@@ -242,6 +201,7 @@ public class Widget extends AppWidgetProvider {
 				RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget);
 				rv.setRemoteAdapter(R.id.widgetList, intent);
 				rv.setEmptyView(R.id.widgetList, R.id.widgetEmpty);
+				rv.setTextViewText(R.id.title, context.getString(R.string.unread));
 				
 				appWidgetManager.updateAppWidget(appWidgetIds[i], rv);
 			}
@@ -250,6 +210,11 @@ public class Widget extends AppWidgetProvider {
 		@Override
 		protected void onProgressUpdate(String... values) {
 			super.onProgressUpdate(values);
+			
+			RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget);
+			rv.setTextViewText(R.id.title, values[0]);
+			appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
+			
 			Log.d(TAG, "Fetch.onProgressUpdate: " + Arrays.toString(values));
 		}
 		

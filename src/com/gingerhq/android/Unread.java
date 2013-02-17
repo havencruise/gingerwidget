@@ -24,20 +24,7 @@ public class Unread {
 	public String intro;
 	
 	public Message latest_message;
-	
-	/*
-	public static String toJSON(List<Unread> dataL) {
 		
-		JSONArray result = new JSONArray();
-		
-		for (Unread unread : dataL) {
-			result.put(new JSONObject(unread.asMap()));
-		}
-
-		return result.toString();
-	}
-	*/
-	
 	public static List<Unread> fromJSON(String dataS) {
 
 		List<Unread> result = new ArrayList<Unread>();
@@ -69,18 +56,21 @@ public class Unread {
 		this.team = obj.getString("team");
 		this.intro = obj.getString("intro");
 		
-		String reply_count_str = obj.getString("reply_count");
-		if (reply_count_str != "null") {
-			this.reply_count = Integer.parseInt(reply_count_str);
+		try {
+			this.reply_count = obj.getInt("reply_count");
+		} catch (JSONException exc) {
+			this.reply_count = -1;
 		}
 		
-		String unread_count_str = obj.getString("unread_count");
-		if (unread_count_str != "null") {
-			this.unread_count = Integer.parseInt(unread_count_str);
+		try {
+			this.unread_count = obj.getInt("unread_count");
+		} catch (JSONException exc) {
+			this.unread_count = -1;
 		}
 		
 		//this.message = new Message(obj.getJSONObject("message"));
 		this.latest_message = new Message(obj.getJSONObject("latest_message"));
+		
 	}
 	
 	public String toString() {
