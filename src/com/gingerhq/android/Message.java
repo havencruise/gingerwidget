@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,6 +50,7 @@ public class Message {
 		
 		String latest_dt = jsonObj.getString("date_latest_activity");
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.US);
+		df.setTimeZone(TimeZone.getTimeZone("UTC"));
 		try {
 			this.date_latest_activity = df.parse(latest_dt);
 		} catch (ParseException exc) {

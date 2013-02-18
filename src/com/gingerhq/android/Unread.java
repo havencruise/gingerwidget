@@ -23,6 +23,7 @@ public class Unread {
 	public int unread_count; 
 	public String intro;
 	
+	public Message message;
 	public Message latest_message;
 		
 	public static List<Unread> fromJSON(String dataS) {
@@ -68,7 +69,7 @@ public class Unread {
 			this.unread_count = -1;
 		}
 		
-		//this.message = new Message(obj.getJSONObject("message"));
+		this.message = new Message(obj.getJSONObject("message"));
 		this.latest_message = new Message(obj.getJSONObject("latest_message"));
 		
 	}

@@ -2,24 +2,29 @@ package com.gingerhq.android;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.provider.Browser;
 import android.util.Log;
 import android.widget.RemoteViews;
 
@@ -30,6 +35,9 @@ public class Widget extends AppWidgetProvider {
 	private static final String DISCS = "https://gingerhq.com/api/v1/discussion/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&format=json&limit=10&offset=0&unread=1";
     private static final String TEAMS = "https://gingerhq.com/api/v1/team/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&limit=100&offset=0&format=json";
 	    
+    private static final String NO_NETWORK = "NO_NETWORK";
+    private static final String FETCH_ERROR = "FETCH_ERROR";
+    
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		super.onReceive(context, intent);
@@ -40,6 +48,10 @@ public class Widget extends AppWidgetProvider {
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
 		Log.d(TAG, "Widget.onUpdate:" + appWidgetIds.length);
+				
+		// Without this, the second HTTPS connection will hang until timeout. Not sure why, something about Android's connection pooling.
+		// Yes, even on > FROYO, On JELLY_BEAN in fact.
+		System.setProperty("http.keepAlive", "false");
 		
 		new Fetch(context, appWidgetManager, appWidgetIds).execute();
 		
@@ -57,26 +69,45 @@ public class Widget extends AppWidgetProvider {
 		Context context;
 		AppWidgetManager appWidgetManager;
 		int[] appWidgetIds;
+		Random random;
 		
 		Fetch(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 			Log.d(TAG, "Fetch.<constructor>");
 			this.context = context;
 			this.appWidgetManager = appWidgetManager;
 			this.appWidgetIds = appWidgetIds;
+			this.random = new Random();
 		}
 		
 		@Override
 		protected String doInBackground(String... params) {
 			Log.d(TAG, "Fetch.doInBackground");
 			
+			if (!this.isOnline()) {
+				Log.d(TAG, "No network, skipping");
+				return NO_NETWORK;
+			}
+
 			publishProgress("Fetching unread messages...");
-			String jsonMsgs = this.fetchURL(DISCS);
+			String jsonMsgs = null;
+			try {
+				jsonMsgs = this.fetchURL(DISCS);
+			} catch (IOException exc) {
+	            Log.e(TAG, "IOException fetching discussions.", exc);
+	            return FETCH_ERROR;
+			}
 			
 			publishProgress("Parsing messages...");
 			String jsonUnread = this.extractObjs(jsonMsgs);
 			
 			publishProgress("Fetching teams...");
-			String jsonTeams = this.fetchURL(TEAMS);
+			String jsonTeams = null;
+			try {
+				jsonTeams = this.fetchURL(TEAMS);
+			} catch (IOException exc) {
+				Log.e(TAG, "IOException fetching teams.", exc);
+				return FETCH_ERROR;
+			}
 			
 			publishProgress("Parsing teams...");
 			Map<String, String> teamNames = null;
@@ -98,6 +129,15 @@ public class Widget extends AppWidgetProvider {
 			return jsonUnread;
 		}
 
+		/**
+		 * Is the device connected to the network?
+		 */
+		private boolean isOnline() {
+			ConnectivityManager connMgr = (ConnectivityManager) this.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+			NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+			return (networkInfo != null && networkInfo.isConnected());
+		}
+		
 		private String setTeamNames(String jsonUnread, Map<String, String> teamNames) throws JSONException {
 			
 			JSONArray array = new JSONArray(jsonUnread);
@@ -130,38 +170,38 @@ public class Widget extends AppWidgetProvider {
 		}
 
 		/**
-		 * Fetch contents of a url
-		 * @param urlStr Like, a URL, duh.
+		 * Fetch contents of a URL.
+		 * @param urlStr A URL to fetch.
 		 */
-		private String fetchURL(String urlStr) {
-			
+		private String fetchURL(String urlStr) throws IOException {
+
 			URL url = null;
+			String cacheBuster = "&rnd=" + Math.abs(random.nextInt());
 	        try {
-	            url = new URL(urlStr);
+	            url = new URL(urlStr + cacheBuster);
 	        } catch (MalformedURLException exc) {
 	            Log.e(TAG, "MalformedURLException on: "+ urlStr, exc);
 	            return "";
 	        }
-
+	        
 	        StringBuffer dataRead = new StringBuffer();
 	        byte[] buf = new byte[2048];
 	        int num_read = 0;
-	        
-	        try {
-	            URLConnection conn = url.openConnection();
-	            InputStream stream = conn.getInputStream();
 
-	            num_read = stream.read(buf);
-	            while (num_read != -1) {	            	
-	            	Log.d(TAG, "Read: "+ num_read);
-	            	dataRead.append(new String(buf, 0, num_read, "UTF-8"));
-	            	num_read = stream.read(buf);
-	            }
-	            
-	            stream.close();
-	        } catch (IOException exc) {
-	            Log.e(TAG, "IOException fetching remote data. ", exc);
-	        }
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.connect();
+                        
+            InputStream stream = conn.getInputStream();
+            
+            num_read = stream.read(buf);
+            while (num_read != -1) {
+            	//Log.d(TAG, "fetchURL: Read: "+ num_read);
+            	dataRead.append(new String(buf, 0, num_read, "UTF-8"));
+            	num_read = stream.read(buf);
+            }
+            
+            stream.close();
+	        conn.disconnect();
 	        
 	        return dataRead.toString();
 		}
@@ -189,16 +229,46 @@ public class Widget extends AppWidgetProvider {
 		@Override
 		protected void onPostExecute(String result) {
 			super.onPostExecute(result);
+
+			RemoteViews rv = new RemoteViews(
+					context.getPackageName(), 
+					R.layout.widget);
 			
-			for (int i = 0; i < appWidgetIds.length; ++i) {		// In case we have multiple widgets
+			// The URL (second parameter) gets filled in in WidgetRemoteFactory
+			Intent browserIntent = new Intent(Intent.ACTION_VIEW, null);						
+			browserIntent.putExtra(
+					Browser.EXTRA_APPLICATION_ID, 
+					this.context.getPackageName());	// Re-use tab
+			
+			// The Intent is filled in by WidgetRemoteFactory.getViewAt
+			PendingIntent pendingIntent = PendingIntent.getActivity(
+					this.context, 
+					0, 
+					browserIntent, 
+					PendingIntent.FLAG_UPDATE_CURRENT);
+			rv.setPendingIntentTemplate(R.id.widgetList, pendingIntent);
+			
+			if (result == NO_NETWORK) {
+				rv.setTextViewText(R.id.title, context.getString(R.string.offline));
+				appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
+				return;
+			} else if (result == FETCH_ERROR) {
+				rv.setTextViewText(
+						R.id.title, 
+						context.getString(R.string.fetch_error));
+				appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
+				return;
+			}
+			
+			// In case we have multiple widgets
+			for (int i = 0; i < appWidgetIds.length; ++i) {	
 				
 				Intent intent = new Intent(context, WidgeRemoteService.class);
 				intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[i]);
 				intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
 				
 				intent.putExtra("com.gingerhq.android.Unread", result);
-
-				RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget);
+	
 				rv.setRemoteAdapter(R.id.widgetList, intent);
 				rv.setEmptyView(R.id.widgetList, R.id.widgetEmpty);
 				rv.setTextViewText(R.id.title, context.getString(R.string.unread));

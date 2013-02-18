@@ -4,5 +4,7 @@
     <string name="unread">Unread messages</string>
 	<string name="logo">Ginger logo</string>
 	<string name="all_read">You\'ve read everything</string>
-		
+	<string name="offline">Offline</string>
+	<string name="fetch_error">Remote error - will retry</string>
+	
 </resources>

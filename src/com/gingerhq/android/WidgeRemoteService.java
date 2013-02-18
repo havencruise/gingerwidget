@@ -4,6 +4,8 @@ import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
+import android.provider.Browser;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -52,14 +54,16 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 	@Override
 	public RemoteViews getViewAt(int position) {
-
-		Log.d(TAG, "getViewAt: "+ position);
 		
 		Unread unread = this.data.get(position);
 		
-		RemoteViews rv = new RemoteViews(this.context.getPackageName(), R.layout.row);
+		RemoteViews rv = new RemoteViews(
+				this.context.getPackageName(), 
+				R.layout.row);
 		rv.setTextViewText(R.id.rowTitle, unread.title);
-		rv.setTextViewText(R.id.rowUnreadCount, String.valueOf(unread.unread_count));
+		rv.setTextViewText(
+				R.id.rowUnreadCount, 
+				String.valueOf(unread.unread_count));
 		rv.setTextViewText(R.id.rowUser, "In " + unread.team);
 		
 		rv.setTextViewText(R.id.rowWhen, 
@@ -69,6 +73,12 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 						DateUtils.MINUTE_IN_MILLIS, 
 						DateUtils.WEEK_IN_MILLIS, 
 						0) );
+
+		// Open browser on click
+		
+		String msgURL = "https://gingerhq.com" + unread.message.permalink;
+		Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(msgURL));
+		rv.setOnClickFillInIntent(R.id.widgetRow, intent);
 
 		return rv;
 	}
