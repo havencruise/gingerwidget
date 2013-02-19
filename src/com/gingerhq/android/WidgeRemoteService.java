@@ -5,7 +5,6 @@ import java.util.List;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.provider.Browser;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.RemoteViews;

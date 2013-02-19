@@ -20,10 +20,12 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.provider.Browser;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -32,9 +34,13 @@ public class Widget extends AppWidgetProvider {
 
 	private static final String TAG = Widget.class.getSimpleName();
 	
-	private static final String DISCS = "https://gingerhq.com/api/v1/discussion/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&format=json&limit=10&offset=0&unread=1";
-    private static final String TEAMS = "https://gingerhq.com/api/v1/team/?username=graham%40gkgk.org&api_key=ae9d3a85527b2772e57734072f91e83e0b25370e&limit=100&offset=0&format=json";
-	    
+	private static final String ROOT = "https://gingerhq.com";
+	private static final String API_ROOT = ROOT + "/api/v1";
+	private static final String DISCS = API_ROOT + 
+		"/discussion/?username=EMAIL&api_key=API_KEY&format=json&limit=10&offset=0&unread=1";
+    private static final String TEAMS = API_ROOT + 
+    	"/team/?username=EMAIL&api_key=API_KEY&limit=100&offset=0&format=json";
+    
     private static final String NO_NETWORK = "NO_NETWORK";
     private static final String FETCH_ERROR = "FETCH_ERROR";
     
@@ -48,14 +54,12 @@ public class Widget extends AppWidgetProvider {
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
 		Log.d(TAG, "Widget.onUpdate:" + appWidgetIds.length);
-				
+		
 		// Without this, the second HTTPS connection will hang until timeout. Not sure why, something about Android's connection pooling.
 		// Yes, even on > FROYO, On JELLY_BEAN in fact.
 		System.setProperty("http.keepAlive", "false");
 		
 		new Fetch(context, appWidgetManager, appWidgetIds).execute();
-		
-		//context.startService(new Intent(context, Updater.class));
 	}
 
 	@Override
@@ -91,7 +95,7 @@ public class Widget extends AppWidgetProvider {
 			publishProgress("Fetching unread messages...");
 			String jsonMsgs = null;
 			try {
-				jsonMsgs = this.fetchURL(DISCS);
+				jsonMsgs = this.fetchURL(this.insertPrefs(DISCS));
 			} catch (IOException exc) {
 	            Log.e(TAG, "IOException fetching discussions.", exc);
 	            return FETCH_ERROR;
@@ -103,7 +107,7 @@ public class Widget extends AppWidgetProvider {
 			publishProgress("Fetching teams...");
 			String jsonTeams = null;
 			try {
-				jsonTeams = this.fetchURL(TEAMS);
+				jsonTeams = this.fetchURL(this.insertPrefs(TEAMS));
 			} catch (IOException exc) {
 				Log.e(TAG, "IOException fetching teams.", exc);
 				return FETCH_ERROR;
@@ -129,6 +133,18 @@ public class Widget extends AppWidgetProvider {
 			return jsonUnread;
 		}
 
+		/**
+		 * Replace EMAIL and API_KEY in given string with preferences.
+		 * @return The replaces string
+		 */
+		private String insertPrefs(String original) {
+			
+			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+			return original
+				.replaceFirst("EMAIL", prefs.getString("email", ""))
+				.replaceFirst("API_KEY", prefs.getString("api_key", ""));
+		}
+		
 		/**
 		 * Is the device connected to the network?
 		 */

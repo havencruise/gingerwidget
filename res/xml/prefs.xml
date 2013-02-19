@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <EditTextPreference 
+        android:key="email"
+        android:title="@string/email"
+        android:summary="Email address you login to Ginger with" />
+    <EditTextPreference 
+        android:key="api_key"
+        android:title="@string/api_key"
+        android:summary="API Key - get it from https://gingerhq.com/accounts/api-access/"/>
+
+</PreferenceScreen>

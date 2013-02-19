@@ -30,7 +30,13 @@
             	 android:exported="false" />
     
         <!-- <service android:name=".Updater" /> -->
-        
+    
+    	<activity android:name=".Config" android:label="@string/settings">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+    	        
     </application>
 
 </manifest>
