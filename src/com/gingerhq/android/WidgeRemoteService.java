@@ -66,7 +66,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 		rv.setTextViewText(R.id.rowUser, "In " + unread.team);
 		
 		rv.setTextViewText(R.id.rowWhen, 
-				DateUtils.getRelativeDateTimeString(
+				"Updated " + DateUtils.getRelativeDateTimeString(
 						this.context, 
 						unread.latest_message.date_latest_activity.getTime(), 
 						DateUtils.MINUTE_IN_MILLIS, 

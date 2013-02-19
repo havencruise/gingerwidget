@@ -41,8 +41,11 @@ public class Widget extends AppWidgetProvider {
     private static final String TEAMS = API_ROOT + 
     	"/team/?username=EMAIL&api_key=API_KEY&limit=100&offset=0&format=json";
     
-    private static final String NO_NETWORK = "NO_NETWORK";
     private static final String FETCH_ERROR = "FETCH_ERROR";
+    
+    Context context;
+    AppWidgetManager appWidgetManager;
+    int[] appWidgetIds;
     
 	@Override
 	public void onReceive(Context context, Intent intent) {
@@ -55,13 +58,62 @@ public class Widget extends AppWidgetProvider {
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
 		Log.d(TAG, "Widget.onUpdate:" + appWidgetIds.length);
 		
-		// Without this, the second HTTPS connection will hang until timeout. Not sure why, something about Android's connection pooling.
+		this.context = context;
+		this.appWidgetManager = appWidgetManager;
+		this.appWidgetIds = appWidgetIds;
+		
+		if (!this.isOnline()) {
+			Log.d(TAG, "No network, skipping");
+			this.updateTitle(R.string.offline);
+			return;
+		}
+		
+		String email = this.getEmail();
+		String apiKey = this.getAPIKey();
+		if (email == null || apiKey == null) {
+			Log.d(TAG, "No preferences yet");
+			this.updateTitle(R.string.waitingPrefs);
+			return;
+		}
+		
+		// Without this, the second HTTPS connection will hang until timeout. 
+		// Not sure why, something about Android's connection pooling.
 		// Yes, even on > FROYO, On JELLY_BEAN in fact.
 		System.setProperty("http.keepAlive", "false");
 		
-		new Fetch(context, appWidgetManager, appWidgetIds).execute();
+		new Fetch(context, appWidgetManager, appWidgetIds, email, apiKey).execute();
 	}
-
+	
+	private String getEmail() {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		return prefs.getString("email", null);
+	}
+	
+	private String getAPIKey() {
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		return prefs.getString("api_key", null);
+	}
+	
+	/**
+	 * Is the device connected to the network?
+	 */
+	private boolean isOnline() {
+		ConnectivityManager connMgr = (ConnectivityManager) this.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+		return (networkInfo != null && networkInfo.isConnected());
+	}
+	
+	/**
+	 * Change the widget title to reflect current status
+	 */
+	private void updateTitle(int stringId) {
+		RemoteViews rv = new RemoteViews(
+				this.context.getPackageName(), 
+				R.layout.widget);
+		rv.setTextViewText(R.id.title, context.getString(stringId));
+		this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
+	}
+	
 	@Override
 	public void onDeleted(Context context, int[] appWidgetIds) {
 		super.onDeleted(context, appWidgetIds);
@@ -74,23 +126,29 @@ public class Widget extends AppWidgetProvider {
 		AppWidgetManager appWidgetManager;
 		int[] appWidgetIds;
 		Random random;
+		String email;
+		String apiKey;
 		
-		Fetch(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
+		Fetch(
+				Context context, 
+				AppWidgetManager appWidgetManager, 
+				int[] appWidgetIds,
+				String email,
+				String apiKey) {
+			
 			Log.d(TAG, "Fetch.<constructor>");
 			this.context = context;
 			this.appWidgetManager = appWidgetManager;
 			this.appWidgetIds = appWidgetIds;
+			this.email = email;
+			this.apiKey = apiKey;
+			
 			this.random = new Random();
 		}
 		
 		@Override
 		protected String doInBackground(String... params) {
 			Log.d(TAG, "Fetch.doInBackground");
-			
-			if (!this.isOnline()) {
-				Log.d(TAG, "No network, skipping");
-				return NO_NETWORK;
-			}
 
 			publishProgress("Fetching unread messages...");
 			String jsonMsgs = null;
@@ -139,19 +197,9 @@ public class Widget extends AppWidgetProvider {
 		 */
 		private String insertPrefs(String original) {
 			
-			SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 			return original
-				.replaceFirst("EMAIL", prefs.getString("email", ""))
-				.replaceFirst("API_KEY", prefs.getString("api_key", ""));
-		}
-		
-		/**
-		 * Is the device connected to the network?
-		 */
-		private boolean isOnline() {
-			ConnectivityManager connMgr = (ConnectivityManager) this.context.getSystemService(Context.CONNECTIVITY_SERVICE);
-			NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-			return (networkInfo != null && networkInfo.isConnected());
+				.replaceFirst("EMAIL", this.email)
+				.replaceFirst("API_KEY", this.apiKey);
 		}
 		
 		private String setTeamNames(String jsonUnread, Map<String, String> teamNames) throws JSONException {
@@ -247,8 +295,16 @@ public class Widget extends AppWidgetProvider {
 			super.onPostExecute(result);
 
 			RemoteViews rv = new RemoteViews(
-					context.getPackageName(), 
+					this.context.getPackageName(), 
 					R.layout.widget);
+			
+			if (result == FETCH_ERROR) {
+				rv.setTextViewText(
+						R.id.title, 
+						context.getString(R.string.fetch_error));
+				this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
+				return;
+			}
 			
 			// The URL (second parameter) gets filled in in WidgetRemoteFactory
 			Intent browserIntent = new Intent(Intent.ACTION_VIEW, null);						
@@ -264,32 +320,20 @@ public class Widget extends AppWidgetProvider {
 					PendingIntent.FLAG_UPDATE_CURRENT);
 			rv.setPendingIntentTemplate(R.id.widgetList, pendingIntent);
 			
-			if (result == NO_NETWORK) {
-				rv.setTextViewText(R.id.title, context.getString(R.string.offline));
-				appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
-				return;
-			} else if (result == FETCH_ERROR) {
-				rv.setTextViewText(
-						R.id.title, 
-						context.getString(R.string.fetch_error));
-				appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
-				return;
-			}
-			
 			// In case we have multiple widgets
-			for (int i = 0; i < appWidgetIds.length; ++i) {	
+			for (int i = 0; i < this.appWidgetIds.length; ++i) {	
 				
 				Intent intent = new Intent(context, WidgeRemoteService.class);
-				intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetIds[i]);
+				intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, this.appWidgetIds[i]);
 				intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
 				
 				intent.putExtra("com.gingerhq.android.Unread", result);
 	
 				rv.setRemoteAdapter(R.id.widgetList, intent);
 				rv.setEmptyView(R.id.widgetList, R.id.widgetEmpty);
-				rv.setTextViewText(R.id.title, context.getString(R.string.unread));
+				rv.setTextViewText(R.id.title, this.context.getString(R.string.unread));
 				
-				appWidgetManager.updateAppWidget(appWidgetIds[i], rv);
+				this.appWidgetManager.updateAppWidget(this.appWidgetIds[i], rv);
 			}
 		}
 
@@ -297,9 +341,9 @@ public class Widget extends AppWidgetProvider {
 		protected void onProgressUpdate(String... values) {
 			super.onProgressUpdate(values);
 			
-			RemoteViews rv = new RemoteViews(context.getPackageName(), R.layout.widget);
+			RemoteViews rv = new RemoteViews(this.context.getPackageName(), R.layout.widget);
 			rv.setTextViewText(R.id.title, values[0]);
-			appWidgetManager.updateAppWidget(appWidgetIds[0], rv);
+			this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
 			
 			Log.d(TAG, "Fetch.onProgressUpdate: " + Arrays.toString(values));
 		}

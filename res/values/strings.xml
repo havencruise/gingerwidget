@@ -6,6 +6,7 @@
 	<string name="all_read">You\'ve read everything</string>
 	<string name="offline">Offline</string>
 	<string name="fetch_error">Remote error - will retry</string>
+	<string name="waitingPrefs">Please update settings</string>
 	
 	<string name="settings">Settings</string>
 	<string name="email">Email address</string>
