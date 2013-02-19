@@ -56,7 +56,7 @@ public class Widget extends AppWidgetProvider {
 	@Override
 	public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
 		super.onUpdate(context, appWidgetManager, appWidgetIds);
-		Log.d(TAG, "Widget.onUpdate:" + appWidgetIds.length);
+		Log.d(TAG, "Widget.onUpdate");
 		
 		this.context = context;
 		this.appWidgetManager = appWidgetManager;
@@ -76,21 +76,26 @@ public class Widget extends AppWidgetProvider {
 			return;
 		}
 		
+		this.attachRefresh();
+		
 		// Without this, the second HTTPS connection will hang until timeout. 
 		// Not sure why, something about Android's connection pooling.
 		// Yes, even on > FROYO, On JELLY_BEAN in fact.
 		System.setProperty("http.keepAlive", "false");
 		
-		new Fetch(context, appWidgetManager, appWidgetIds, email, apiKey).execute();
+		new Fetch(context, appWidgetManager, appWidgetIds, email, apiKey)
+			.execute();
 	}
 	
 	private String getEmail() {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		SharedPreferences prefs = 
+				PreferenceManager.getDefaultSharedPreferences(context);
 		return prefs.getString("email", null);
 	}
 	
 	private String getAPIKey() {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+		SharedPreferences prefs = 
+				PreferenceManager.getDefaultSharedPreferences(context);
 		return prefs.getString("api_key", null);
 	}
 	
@@ -111,6 +116,30 @@ public class Widget extends AppWidgetProvider {
 				this.context.getPackageName(), 
 				R.layout.widget);
 		rv.setTextViewText(R.id.title, context.getString(stringId));
+		this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
+	}
+	
+	/**
+	 * Clicking the refresh icon updates the widget
+	 */
+	private void attachRefresh() {
+		
+		RemoteViews rv = new RemoteViews(
+				this.context.getPackageName(), 
+				R.layout.widget);
+		
+		Intent updateIntent = new Intent(this.context, Widget.class);
+		updateIntent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+		updateIntent.putExtra(
+				AppWidgetManager.EXTRA_APPWIDGET_IDS, 
+				this.appWidgetIds);
+		PendingIntent pendingIntent = PendingIntent.getBroadcast(
+				context,
+				0,
+				updateIntent,
+				0);
+		rv.setOnClickPendingIntent(R.id.refresh, pendingIntent);
+		
 		this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
 	}
 	

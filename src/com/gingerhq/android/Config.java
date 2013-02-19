@@ -9,11 +9,10 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 public class Config extends PreferenceActivity {
 	
-	private static final String TAG = PreferenceActivity.class.getSimpleName();
+	//private static final String TAG = PreferenceActivity.class.getSimpleName();
 	
 	ChangeListener changeListener;
 	int appWidgetId;

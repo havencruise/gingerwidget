@@ -7,7 +7,7 @@
     android:background="#FFF">
     
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="fill_parent"
     	android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="#f5f5f5">
@@ -28,6 +28,20 @@
        	    android:paddingLeft="10dp"
        	    android:gravity="center_vertical" />
        	    
+       	<LinearLayout
+       	    android:layout_width="fill_parent"
+    		android:layout_height="fill_parent"
+        	android:orientation="horizontal"
+        	android:gravity="right">
+	       	<ImageView
+	       	    android:id="@+id/refresh"
+	       	    android:layout_width="wrap_content"
+	       	    android:layout_height="wrap_content"
+	       	    android:src="@drawable/ic_menu_refresh"
+	       	    android:contentDescription="@string/refresh"
+	       	    android:layout_gravity="center" />
+       	</LinearLayout>
+       	
     </LinearLayout>
     
     <ListView android:id="@+id/widgetList"
