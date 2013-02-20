@@ -140,7 +140,7 @@ public class Widget extends AppWidgetProvider {
 				0);
 		rv.setOnClickPendingIntent(R.id.refresh, pendingIntent);
 		
-		this.appWidgetManager.updateAppWidget(this.appWidgetIds[0], rv);
+		this.appWidgetManager.updateAppWidget(this.appWidgetIds, rv);
 	}
 	
 	@Override
@@ -364,6 +364,10 @@ public class Widget extends AppWidgetProvider {
 				
 				this.appWidgetManager.updateAppWidget(this.appWidgetIds[i], rv);
 			}
+			
+			//this.appWidgetManager.notifyAppWidgetViewDataChanged(this.appWidgetIds, R.id.widgetLayout);
+			
+			Log.d(TAG, "Finished onPostExecute");
 		}
 
 		@Override

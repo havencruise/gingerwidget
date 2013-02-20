@@ -3,7 +3,8 @@
     android:id="@+id/widgetRow"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal" >
+    android:orientation="horizontal"
+    android:baselineAligned="true">
 
 	<LinearLayout
 	        android:layout_width="0dp"
@@ -18,7 +19,7 @@
 	        android:layout_height="wrap_content"
 	        android:textColor="#046380"
 	        android:textSize="16sp"
-	        android:textIsSelectable="true" />
+	        android:textIsSelectable="false" />
 
 	    <TextView
 	        android:id="@+id/rowUser"

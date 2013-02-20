@@ -12,8 +12,11 @@ import android.widget.RemoteViewsService;
 
 public class WidgeRemoteService extends RemoteViewsService {
 
+	public static final String TAG = WidgeRemoteService.class.getSimpleName();
+	
 	@Override
 	public RemoteViewsFactory onGetViewFactory(Intent intent) {
+		Log.d(TAG, "onGetViewFactory");
 		return new WidgetRemoteFactory(this.getApplicationContext(), intent);
 	}
 
@@ -53,6 +56,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 	@Override
 	public RemoteViews getViewAt(int position) {
+		Log.d(TAG, "getViewAt: " + position);
 		
 		Unread unread = this.data.get(position);
 		
