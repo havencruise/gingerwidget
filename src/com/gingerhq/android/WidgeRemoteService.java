@@ -4,7 +4,9 @@ import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.RemoteViews;
@@ -32,15 +34,16 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 	public WidgetRemoteFactory(Context applicationContext, Intent intent) {
 		Log.d(TAG, "WidgetRemoteFactory constructor");
 		this.context = applicationContext;
-				
-		String jsonData = intent.getStringExtra("com.gingerhq.android.Unread");
-		this.data = Unread.fromJSON(jsonData);
 	}
 
 	@Override
 	public int getCount() {
-		Log.d(TAG, "WidgetRemoteFactory.getCount: " + this.data.size());
-		return this.data.size();
+		Log.d(TAG, "WidgetRemoteFactory.getCount");
+		if (this.data != null) {
+			return this.data.size();
+		} else {
+			return 0;
+		}
 	}
 
 	@Override
@@ -50,7 +53,7 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 
 	@Override
 	public RemoteViews getLoadingView() {
-		// We don't have a loading view
+		// We don't have a loading view because getViewAt is fast enough
 		return null;
 	}
 
@@ -105,9 +108,20 @@ class WidgetRemoteFactory implements RemoteViewsService.RemoteViewsFactory {
 	@Override
 	public void onDataSetChanged() {
 		Log.d(TAG, "WidgetRemoteFactory.onDataSetChanged");
-		// Refresh the cursor (?)
+		this.data = new Fetch(getEmail(), getAPIKey()).fetch();
 	}
-
+	
+	private String getEmail() {
+		SharedPreferences prefs = 
+				PreferenceManager.getDefaultSharedPreferences(context);
+		return prefs.getString("email", null);
+	}
+	
+	private String getAPIKey() {
+		SharedPreferences prefs = 
+				PreferenceManager.getDefaultSharedPreferences(context);
+		return prefs.getString("api_key", null);
+	}
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, "WidgetRemoteFactory.onDestroy");
